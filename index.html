@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+	<meta name="generator" content="Hugo 0.91.2" />
+
+  <title>
+      
+      *scratch*
+      
+  </title>
+
+</head>
+
+
+  <body>
+
+    
+
+	
+<div class="h-feed">
+
+	
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://scratch-buffer.org/2023/09/12/emacs-and-s.html">Emacs Package: s3ed</a></h1>
+		
+
+		<a href="https://scratch-buffer.org/2023/09/12/emacs-and-s.html" class="u-url"><time class="dt-published" datetime="2023-09-12 18:00:45 -0400">Sep 12, 2023</time></a>
+
+		<div class="e-content">
+			 <p>The <a href="https://github.com/mattusifer/s3ed">s3ed</a> package provides a convenient way to work directly with S3 files from Emacs. It uses the AWS CLI under the hood to provide a couple of commands to browse S3 buckets and edit files as if they were local.</p>
+<p>Here&rsquo;s an example configuration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(use-package s3ed 
+    :if (executable-find <span style="color:#e6db74">&#34;aws&#34;</span>) 
+    :bind
+    (<span style="color:#e6db74">&#34;C-c s f&#34;</span> <span style="color:#f92672">.</span> s3ed-find-file) 
+    (<span style="color:#e6db74">&#34;C-c s s&#34;</span> <span style="color:#f92672">.</span> s3ed-save-file))
+</code></pre></div><h2 id="update-handling-quit-signals">Update: Handling quit signals</h2>
+<p>After using this package for a bit, I noticed that sometimes I would get into a state where <code>&lt;backspace&gt;</code> in the minibuffer would raise an error. Checking the key binding, I determined this was caused by <code>s3ed</code> and had to do a little digging.</p>
+<p>It turns out the <code>s3ed</code> commands bind their own behavior to <code>&lt;backspace&gt;</code> in the <code>minibuffer-local-map</code>. That binding is removed when the command is done&hellip; but <em>not</em> if you change your mind and use <code>C-g</code> (<code>keyboard-quit</code>) to quit the minibuffer without completing the command. In that situation the key binding remains waiting to cause problems the next time you try to backspace in the minibuffer.</p>
+<p>One way to work around the issue is to handle the <code>quit</code> signal to ensure the key binding is removed. I&rsquo;ve added this to the <code>use-package</code> example above:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">:config
+(defun my/s3ed-quit-handler (orig <span style="color:#66d9ef">&amp;rest</span> args)
+  (condition-case <span style="color:#66d9ef">nil</span>
+      (<span style="color:#a6e22e">apply</span> orig args)
+    (quit (<span style="color:#a6e22e">define-key</span> minibuffer-local-map (kbd <span style="color:#e6db74">&#34;&lt;backspace&gt;&#34;</span>) <span style="color:#66d9ef">nil</span>))))
+(advice-add <span style="color:#a6e22e">#&#39;</span>s3ed-find-file :around <span style="color:#a6e22e">#&#39;</span>my/s3ed-quit-handler)
+(advice-add <span style="color:#a6e22e">#&#39;</span>s3ed-save-file :around <span style="color:#a6e22e">#&#39;</span>my/s3ed-quit-handler))
+</code></pre></div><p>With that everything is working great, and <code>s3ed</code> remains a great utility in my Emacs toolbox.</p>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+
+		<a href="https://scratch-buffer.org/2023/09/09/this-buffer-is.html" class="u-url"><time class="dt-published" datetime="2023-09-09 14:33:05 -0400">Sep 9, 2023</time></a>
+
+		<div class="e-content">
+			 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp"><span style="color:#75715e">;; This buffer is for text that is not saved, and for Lisp evaluation.</span>
+<span style="color:#75715e">;; To create a file, visit it with \\[find-file] and enter text in its buffer.</span>
+</code></pre></div>
+		</div>
+	  </div>
+	
+
+</div>
+
+
+    
+    
+
+  </body>
+
+</html>
