@@ -24,6 +24,144 @@
 	
 	  <div class="h-entry">
 		
+			<h1><a href="https://scratch-buffer.org/2023/09/17/protecting-emacs-buffers.html">Protecting Emacs Buffers</a></h1>
+		
+
+		<a href="https://scratch-buffer.org/2023/09/17/protecting-emacs-buffers.html" class="u-url"><time class="dt-published" datetime="2023-09-17 15:05:04 -0400">Sep 17, 2023</time></a>
+
+		<div class="e-content">
+			 <p>A recent thread on Mastadon<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup> lead me to look at the built-in <code>emacs-lock-mode</code> package. This was added back in Emacs 24.1, but I already had implemented something similar and missed it.<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup></p>
+<p>If you are not familiar with it, <code>emacs-lock-mode</code> allows you to lock a buffer in a couple ways:</p>
+<ul>
+<li>Prevent the buffer from accidentally being killed.</li>
+<li>Prevent Emacs from exiting while the buffer is locked.</li>
+</ul>
+<p>My old <code>buffer-protect</code> package was written for the first case only. I occasionally would go in to <code>ibuffer</code> to clean up, and might accidentally mark and delete the <code>scratch</code> buffer or some other temporary buffer that had some useful text in it.</p>
+<p>The built-in mode lets me drop this custom code and replace it with a little bit of configuration:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(use-package emacs-lock
+  :config
+  (with-current-buffer <span style="color:#e6db74">&#34;*scratch*&#34;</span>
+    (emacs-lock-mode <span style="color:#e6db74">&#39;kill</span>)))
+</code></pre></div><p>This locks the scratch buffer to keep it from being killed, but won&rsquo;t block me from exiting Emacs. You can toggle the lock on any buffer with the command <code>emacs-lock-mode</code>. Use a prefix argument to choose the lock behavior, or customize the variable <code>emacs-lock-default-locking-mode</code>.</p>
+<p>This lock mode is also nicely integrated with <code>ibuffer</code>. In my own <code>buffer-protect</code> code I&rsquo;d had to advise some <code>ibuffer</code> functions to prevent them complaining if a protected buffer happened to be marked for deletion. With the built-in lock mode no such tweaking is needed:</p>
+<ul>
+<li>Locked buffers are shown in the <code>*IBuffer*</code> list with an <code>L</code> annotation.</li>
+<li>You can easily toggle the lock state on one or several buffers with <code>L</code></li>
+<li>If you happen to mark a locked buffer and try to delete it, <code>ibuffer</code> silently ignores the delete.</li>
+</ul>
+<p>I don&rsquo;t need <code>emacs-lock-mode</code> frequently enough to bind it to a key, but it&rsquo;s nice to know it is there. And it is always nice to remove custom code from my configuration, particularly when the built-in equivalent is more tightly integrated with other tools like <code>ibuffer</code>.</p>
+<section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>Thanks to <a href="https://mastodon.social/@xenodium@indieweb.social">@xenodium</a>. Check out their <a href="https://xenodium.com">blog</a> on Emacs and other stuff.&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>For the last few releases, Mickey Petersen over at <a href="https://www.masteringemacs.org">Mastering Emacs</a> has been publishing an annotated version of the NEWS file with his comments and observations on what has changed. This is an excellent resource, highlighting new features you might have overlooked or implications of a change you might not think of. Check out his recent post on <a href="https://www.masteringemacs.org/article/whats-new-in-emacs-29-1">Emacs 29.1</a>.&#160;<a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://scratch-buffer.org/2023/09/16/emacs-key-binding.html">Emacs Key Binding Tweaks</a></h1>
+		
+
+		<a href="https://scratch-buffer.org/2023/09/16/emacs-key-binding.html" class="u-url"><time class="dt-published" datetime="2023-09-16 12:27:30 -0400">Sep 16, 2023</time></a>
+
+		<div class="e-content">
+			 <p>Key bindings are one of first things a new Emacs user will experiment with. The default key bindings don&rsquo;t follow recent OS conventions and may seem complicated and hard to remember; so when you discover how easy it is to change them, it may be hard to resist customizing everything. This is of course one of the great things about Emacs: you can and should configure it for your needs.</p>
+<p>I&rsquo;ve dabbled with key bindings over the years<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup> but have settled on using default bindings for most things. Here are some notable exceptions<sup id="fnref:2"><a href="#fn:2" class="footnote-ref" role="doc-noteref">2</a></sup>.</p>
+<h2 id="replacing-defaults-with-dwim-commands">Replacing defaults with DWIM commands</h2>
+<p>There are only so many keys available. If you can find one command that does the job of two or three others, based on context, it can free up some keys &ndash; and be one less thing to remember. In Emacs circles such commands are often referred to as DWIM (Do What I Mean) commands.</p>
+<p>An easy place to start are the case commands. Emacs has separate commands for <code>capitalize-word</code> and <code>capitalize-region</code>, but it also provides <code>capitalize-dwim</code> that can do either depending on whether you have a region selected:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(bind-keys
+ ([remap <span style="color:#a6e22e">capitalize-word</span>] <span style="color:#f92672">.</span> capitalize-dwim)
+ ([remap <span style="color:#a6e22e">upcase-word</span>] <span style="color:#f92672">.</span> upcase-dwim)
+ ([remap <span style="color:#a6e22e">downcase-word</span>] <span style="color:#f92672">.</span> downcase-dwim))
+</code></pre></div><p>Another DWIM command (for me at least): when I hit <code>C-x k</code> to kill a buffer, I always mean the current one:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(bind-key [remap <span style="color:#a6e22e">kill-buffer</span>] <span style="color:#e6db74">&#39;kill-this-buffer</span>)
+</code></pre></div><p>There are also some DWIM commands that cycle through possible outcomes rather than trying to guess what you want. This can be very convenient &ndash; I usually want the first result, and when I want a variation I don&rsquo;t have to remember what the other command is:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(bind-key [remap just-one-space] <span style="color:#e6db74">&#39;cycle-spacing</span>)
+</code></pre></div><h2 id="easier-key-combinations">Easier key combinations</h2>
+<p>Some of the default bindings are just hard to type. I use <code>emacsclient</code> to interact with Emacs running as a server, so the <code>server-edit</code> command comes up fairly often in my workflow. The default binding is <code>C-x #</code>, which is fairly straightforward but does require switching modifiers to get that <code>#</code>. A quick fix is to just replace <code>Shift</code> with <code>Control</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(bind-key <span style="color:#e6db74">&#34;C-x C-3&#34;</span> server-edit)
+</code></pre></div><h2 id="avoiding-prefix-keys-for-common-actions">Avoiding prefix keys for common actions</h2>
+<p>There are some actions in Emacs that are so common that a binding with a prefix (such as <code>C-x o</code>) feels like overhead. In recent versions Emacs has introduced <code>repeat-mode</code> and provided a repeatable binding that simplifies this sort of thing: you can type <code>C-x o o o</code> to switch windows multiple times, without needing the <code>C-x</code> prefix every time. This is a great improvement; but in practice I&rsquo;m usually just working with two windows and don&rsquo;t need the repeat.</p>
+<p>I&rsquo;ve adopted <code>M-o</code> for <code>other-window</code>. It&rsquo;s convenient and not bound by default. I&rsquo;ve also adopted <code>M-i</code> for the related action of switching buffers in the current window. Emacs has a built-in function for what I want here, but it isn&rsquo;t bound to anything. (<code>M-i</code> defaults to <code>tab-to-tab-stop</code>, which is something I have never used.) This pair of bindings makes getting to the window and buffer I want fast and easy:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(bind-keys*
+ :filter (not (<span style="color:#a6e22e">minibufferp</span>))
+ (<span style="color:#e6db74">&#34;M-o&#34;</span> <span style="color:#f92672">.</span> other-window)
+ (<span style="color:#e6db74">&#34;M-i&#34;</span> <span style="color:#f92672">.</span> mode-line-other-buffer))
+</code></pre></div><p>A couple of notes on this one:</p>
+<ul>
+<li>
+<p>I&rsquo;m using <code>bind-keys*</code> to makes these global bindings that override any mode-specific bindings. Your mileage may vary, but so far I&rsquo;ve found having these globally consistent more useful then any mode-specific behavior (which I can always rebind anyway).</p>
+</li>
+<li>
+<p>The one exception to the previous point is the minibuffer. Switching buffers makes no sense in the minibuffer; and I don&rsquo;t often use <code>other-window</code> to switch in and out of the minibuffer, so I can always fall back to <code>C-x o</code> in that situation. There are packages that provide useful minibuffer behavior on these keys by default, so I&rsquo;ve added a filter here.</p>
+</li>
+</ul>
+<h3 id="one-more-other-window-tweak">One more other-window tweak</h3>
+<p>I like the <a href="https://github.com/abo-abo/ace-link">ace-link</a> package, which lets you quickly jump to links in a buffer by highlighting available links with a jump target. By default <code>ace-link</code> binds <code>o</code> for this.</p>
+<p>The new Emacs repeat behavior can get in the way of that. Let&rsquo;s say you open a help buffer, e.g. <code>C-h f</code> to get help for some command. You see a useful link so you want to switch windows and then jump to the link:</p>
+<ul>
+<li>
+<p><code>C-x o</code> (or <code>M-o</code> with my bindings) gets you to the help window.</p>
+</li>
+<li>
+<p><code>o</code> should trigger <code>ace-link</code> to jump to the link&hellip; but instead it takes you back to the window you just left.</p>
+</li>
+</ul>
+<p>There are various ways to address this, but I&rsquo;ve built the habit of using <code>M-o o</code> to do this sort of thing. It&rsquo;s a very simple key sequence that gets me where I want quickly.</p>
+<p>With <code>M-o</code> for <code>other-window</code> I don&rsquo;t really benefit from its repeat behavior, so let&rsquo;s drop that as part of configuring <code>ace-link</code>. Easy enough:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">(use-package ace-link
+  :init
+  (ace-link-setup-default)
+  <span style="color:#75715e">;; Allow for `M-o o&#39; to switch window and jump to link</span>
+  (unbind-key <span style="color:#e6db74">&#34;o&#34;</span> other-window-repeat-map))
+</code></pre></div><section class="footnotes" role="doc-endnotes">
+<hr>
+<ol>
+<li id="fn:1" role="doc-endnote">
+<p>One customization I stuck with for a long time was binding <code>M-1</code>, <code>M-2</code>, etc. to the window split commands that default to <code>C-x 1</code>, <code>C-x 2</code>, and so on. Having <code>digit-argument</code> bound to <em>both</em> <code>M-</code> and <code>C-</code> prefixes seemed like a waste! I eventually realized the convenience of passing a numeric argument to a command without having to switch modifiers. It&rsquo;s much faster to type <code>C-3 C-k</code> to delete three lines and <code>M-3 M-f</code> to go forward three words than to mix modifiers..&#160;<a href="#fnref:1" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+<li id="fn:2" role="doc-endnote">
+<p>I am using the <code>bind-key</code> package in these examples, which is built in to Emacs 29.1 and available as an optional package for earlier versions. For a definitive explanation of key bindings, check out the excellent article <a href="https://www.masteringemacs.org/article/mastering-key-bindings-emacs">Mastering Key Bindings in Emacs</a>.&#160;<a href="#fnref:2" class="footnote-backref" role="doc-backlink">&#x21a9;&#xfe0e;</a></p>
+</li>
+</ol>
+</section>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
+			<h1><a href="https://scratch-buffer.org/2023/09/14/cli-tools-yank.html">Command-line Tools: Yank</a></h1>
+		
+
+		<a href="https://scratch-buffer.org/2023/09/14/cli-tools-yank.html" class="u-url"><time class="dt-published" datetime="2023-09-14 17:14:31 -0400">Sep 14, 2023</time></a>
+
+		<div class="e-content">
+			 <p>If you spend any time working in a terminal, you&rsquo;ll find yourself wanting to extract some bit of data from the output of a command. There are lots of ways to accomplish this: you might use <code>cut</code>, or craft a <code>sed</code> or <code>awk</code> expression that pulls out just the part you need.</p>
+<p>But sometimes you just want to grab the relevant output and move on to doing something useful with it &ndash; without having to stop and think about a regex or count fields. You might reach for the mouse, but for some folks that is a last resort&hellip;</p>
+<p>I&rsquo;ve recently come across the terminal utility <a href="https://github.com/mptre/yank">yank</a>, which is perfect in this situation. Yank provides an interactive selection interface to copy a field from <code>stdin</code>.</p>
+<p>What does that mean? You can run something like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker ps | yank
+</code></pre></div><p>and then use your arrow keys (or <code>hjkl</code>) to select the thing you want, such as a container ID. Hit <code>Enter</code> to copy it to the clipboard and go about your work. You can of course pipe your selection to another command:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">docker ps | yank | xargs docker kill
+</code></pre></div><p>And you can specify a delimiter or a pattern if you need to:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">env | yank -d <span style="color:#f92672">=</span>
+</code></pre></div><p>Check out the <a href="https://github.com/mptre/yank/blob/master/README.md">project README</a> for more examples. Yank is easy to install on a variety of platforms &ndash; give it a try.</p>
+
+		</div>
+	  </div>
+	
+	  <div class="h-entry">
+		
 			<h1><a href="https://scratch-buffer.org/2023/09/12/emacs-and-s.html">Emacs Package: s3ed</a></h1>
 		
 
@@ -37,9 +175,9 @@
     :bind
     (<span style="color:#e6db74">&#34;C-c s f&#34;</span> <span style="color:#f92672">.</span> s3ed-find-file) 
     (<span style="color:#e6db74">&#34;C-c s s&#34;</span> <span style="color:#f92672">.</span> s3ed-save-file))
-</code></pre></div><h2 id="update-handling-quit-signals">Update: Handling quit signals</h2>
+</code></pre></div><h3 id="update-handling-quit-signals">Update: Handling quit signals</h3>
 <p>After using this package for a bit, I noticed that sometimes I would get into a state where <code>&lt;backspace&gt;</code> in the minibuffer would raise an error. Checking the key binding, I determined this was caused by <code>s3ed</code> and had to do a little digging.</p>
-<p>It turns out the <code>s3ed</code> commands bind their own behavior to <code>&lt;backspace&gt;</code> in the <code>minibuffer-local-map</code>. That binding is removed when the command is done&hellip; but <em>not</em> if you change your mind and use <code>C-g</code> (<code>keyboard-quit</code>) to quit the minibuffer without completing the command. In that situation the key binding remains waiting to cause problems the next time you try to backspace in the minibuffer.</p>
+<p>It turns out the <code>s3ed</code> commands bind their own behavior to <code>&lt;backspace&gt;</code> in the <code>minibuffer-local-map</code>. That binding is removed when the command is done&hellip; but <em>not</em> if you change your mind and use <code>C-g</code> (<code>keyboard-quit</code>) to quit the minibuffer without completing the command. In that situation the key binding remains, waiting to cause problems the next time you use the minibuffer.</p>
 <p>One way to work around the issue is to handle the <code>quit</code> signal to ensure the key binding is removed. I&rsquo;ve added this to the <code>use-package</code> example above:</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-elisp" data-lang="elisp">:config
 (defun my/s3ed-quit-handler (orig <span style="color:#66d9ef">&amp;rest</span> args)
@@ -47,8 +185,8 @@
       (<span style="color:#a6e22e">apply</span> orig args)
     (quit (<span style="color:#a6e22e">define-key</span> minibuffer-local-map (kbd <span style="color:#e6db74">&#34;&lt;backspace&gt;&#34;</span>) <span style="color:#66d9ef">nil</span>))))
 (advice-add <span style="color:#a6e22e">#&#39;</span>s3ed-find-file :around <span style="color:#a6e22e">#&#39;</span>my/s3ed-quit-handler)
-(advice-add <span style="color:#a6e22e">#&#39;</span>s3ed-save-file :around <span style="color:#a6e22e">#&#39;</span>my/s3ed-quit-handler))
-</code></pre></div><p>With that everything is working great, and <code>s3ed</code> remains a great utility in my Emacs toolbox.</p>
+(advice-add <span style="color:#a6e22e">#&#39;</span>s3ed-save-file :around <span style="color:#a6e22e">#&#39;</span>my/s3ed-quit-handler)
+</code></pre></div><p>With that everything is working well, and <code>s3ed</code> remains a great utility in my Emacs toolbox.</p>
 
 		</div>
 	  </div>
@@ -70,7 +208,9 @@
 
 
     
-    
+    <footer>
+<a rel="me noopener" href="https://mastodon.cloud/@glucas" target="_blank">@glucas on Mastodon</a>
+</footer>
 
   </body>
 
